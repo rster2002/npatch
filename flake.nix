@@ -12,7 +12,7 @@
     in
     pkgs.rustPlatform.buildRustPackage {
       pname = "npatch";
-      version = "0.1";
+      version = "0.1.1";
       cargoLock.lockFile = ./Cargo.lock;
       src = pkgs.lib.cleanSource ./.;
     };

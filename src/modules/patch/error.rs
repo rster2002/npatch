@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use thiserror::Error;
 use crate::modules::lib::LibError;
 
@@ -7,6 +8,9 @@ pub enum PatchError {
     IO(#[from] std::io::Error),
     LibError(#[from] LibError),
     FromUTF8Error(#[from] std::string::FromUtf8Error),
+
+    #[error("Could not find match for dependency {0}")]
+    MissingMatchFor(PathBuf),
 
     #[error("Failed to represent path")]
     FailedToRepresentPath,

@@ -3,31 +3,51 @@ use std::process::Command;
 use crate::modules::lib::{dependencies_of, LibIndex};
 use crate::modules::patch::error::PatchError;
 
-pub fn patch_binary<P: AsRef<Path>>(binary_path: P, lib_index: &LibIndex) -> Result<(), PatchError> {
+pub fn patch_binary<P: AsRef<Path>>(
+    binary_path: P,
+    lib_index: &LibIndex,
+    fail_on_missing: bool,
+) -> Result<(), PatchError> {
     if cfg!(target_os = "macos") {
-        install_name_tool_patch_binary(binary_path, lib_index)
+        install_name_tool_patch_binary(binary_path, lib_index, fail_on_missing)
     } else {
         unimplemented!()
     }
 }
 
-fn install_name_tool_patch_binary<P: AsRef<Path>>(binary_path: P, lib_index: &LibIndex) -> Result<(), PatchError> {
+fn install_name_tool_patch_binary<P: AsRef<Path>>(
+    binary_path: P,
+    lib_index: &LibIndex,
+    fail_on_missing: bool,
+) -> Result<(), PatchError> {
     println!("Patching {}", binary_path.as_ref().display());
 
     let mut command = Command::new("install_name_tool");
 
     let dependencies = dependencies_of(&binary_path)?;
 
+    let mut any_found = false;
+
     for dependency in dependencies.iter() {
         let lib_file = lib_index.find_match_for(dependency)?;
 
         let Some(lib_file) = lib_file else {
             println!("Could not find lib file for dependency {}", dependency.display());
-            // TODO handle fail
+
+            if fail_on_missing {
+                return Err(PatchError::MissingMatchFor(dependency.clone()));
+            }
+
             continue;
         };
 
+        any_found = true;
         command.arg("-change").arg(dependency).arg(lib_file);
+    }
+
+    if !any_found {
+        println!("No dependencies found to patch");
+        return Ok(());
     }
 
     let path_string = binary_path.as_ref()

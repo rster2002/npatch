@@ -18,5 +18,5 @@ pub struct ClapRoot {
 
     /// Fail if a library cannot be found.
     #[clap(long)]
-    pub fail: bool,
+    pub fail_on_missing: bool,
 }
